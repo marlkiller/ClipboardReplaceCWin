@@ -3,20 +3,23 @@
 #include <string>
 #include <regex>
 
-//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-//bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-
-//隐藏DOS黑窗口
+int WIN_HIDDEN = 1;
+#ifdef _DEBUG
+#else
 #pragma comment( linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"" )
+#endif 
 
 
 std::string REPLACCE_VAL = "1234567890123456789012345678901234";
 std::regex REGEX_VAL("[0-9a-zA-Z]{34}");
 
+//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+//bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
 #pragma warning(disable:4996)
 void raplce_if_match()
 {
-    
+
     HWND hWnd = NULL;
 
     OpenClipboard(hWnd);
@@ -31,7 +34,7 @@ void raplce_if_match()
     char* p = (char*)GlobalLock(h);
     std::string clipboard_val = p;
     GlobalUnlock(h);
-    printf("GET Clipboard TEXT : \n----------\n%s\n----------\n" , p);
+    printf("GET Clipboard TEXT : \n----------\n%s\n----------\n", p);
 
     if (strstr(p, REPLACCE_VAL.c_str())) {
         CloseClipboard();
@@ -39,7 +42,7 @@ void raplce_if_match()
         return;
     }
 
-     // regex_match 只支持完整匹配,模糊搜索用 regex_search
+    // regex_match 只支持完整匹配,模糊搜索用 regex_search
     if (!regex_search(p, REGEX_VAL)) {
         printf(">> not matched\n");
         CloseClipboard();
@@ -48,9 +51,9 @@ void raplce_if_match()
 
     printf(">> matched will be replaced");
 
-    
+
     EmptyClipboard();
-    HANDLE hHandle = GlobalAlloc(GMEM_FIXED, strlen(p)+1);//分配内存
+    HANDLE hHandle = GlobalAlloc(GMEM_FIXED, strlen(p) + 1);//分配内存
     char* pData = (char*)GlobalLock(hHandle);
     std::string out = regex_replace(p, REGEX_VAL, REPLACCE_VAL, std::regex_constants::match_flag_type::format_first_only);
     strcpy(pData, out.c_str());
@@ -58,17 +61,16 @@ void raplce_if_match()
     GlobalUnlock(hHandle);
     CloseClipboard();
 
-    
+
 }
-LRESULT CALLBACK ClipWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     static BOOL bListening = FALSE;
-    switch (uMsg)
-    {
+	switch (uMsg) {
     case WM_CREATE:
         bListening = AddClipboardFormatListener(hWnd);
         return bListening ? 0 : -1;
-
     case WM_DESTROY:
         if (bListening)
         {
@@ -78,39 +80,45 @@ LRESULT CALLBACK ClipWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 0;
 
     case WM_CLIPBOARDUPDATE:
-        
         raplce_if_match();
         return 0;
-    }
 
-    return DefWindowProc(hWnd, uMsg, wParam, lParam);
+	default:
+		return DefWindowProc(hWnd, uMsg, wParam, lParam);
+	}
+
 }
+
 
 int main()
 {
-    // 隱藏主窗口
-    ShowWindow(GetForegroundWindow(), 0);
-    WNDCLASSEX wndClass = { sizeof(WNDCLASSEX) };
-    wndClass.lpfnWndProc = ClipWndProc;
-    wndClass.lpszClassName = L"ClipWnd";
-    if (!RegisterClassEx(&wndClass))
-    {
-        printf("RegisterClassEx error 0x%08X\n", GetLastError()); return 1;
-    }
-    HWND hWnd = CreateWindowEx(0, wndClass.lpszClassName, L"", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, GetModuleHandle(NULL), NULL);
-    if (!hWnd)
-    {
-        printf("CreateWindowEx error 0x%08X\n", GetLastError()); return 2;
-    }
+    // Register the window class
+    WNDCLASS wc = {};
+    wc.hInstance = NULL;
+;
+    wc.lpszClassName = L"MainWindow";
+    wc.lpfnWndProc = WindowProc;
+    wc.hbrBackground = (HBRUSH)(GetStockObject(GRAY_BRUSH));
+    RegisterClass(&wc);
 
-    printf("Press ^C to exit\n\n");
+    // Create the window
+    HWND hwnd = CreateWindow(
+        L"MainWindow", // Window class name
+        L"窗口名称", // Window name
+        WS_OVERLAPPEDWINDOW, // Window style
+        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, // Size and position
+        NULL, // Parent window
+        NULL, // Menu
+        NULL, // Instance handle
+        NULL // Additional application data
+    );
 
-    MSG msg;
-    while (BOOL bRet = GetMessage(&msg, 0, 0, 0)) {
-        if (bRet == -1)
-        {
-            printf("GetMessage error 0x%08X\n", GetLastError()); return 3;
-        }
+    // Show the window
+    ShowWindow(hwnd, WIN_HIDDEN);
+
+    // Run the message loop
+    MSG msg = {};
+    while (GetMessage(&msg, NULL, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
